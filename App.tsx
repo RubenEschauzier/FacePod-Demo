@@ -17,7 +17,6 @@ interface SolidUser {
   name: string;
 }
 
-// --- METRICS INTERFACE ---
 export interface QueryMetrics {
   /**
    * Performance.now value of start time query
@@ -58,18 +57,25 @@ const PREDEFINED_USERS: SolidUser[] = [
   }
 ];
 
-// --- 2. LANDING PAGE COMPONENT ---
 const LandingPage: React.FC = () => {
-  const { login } = useAuth();
+  // 1. Get 'user' from context to check status
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const [selectedUserId, setSelectedUserId] = useState<string>(PREDEFINED_USERS[0]!.id);
+
+  useEffect(() => {
+    if (user) {
+      // replace: true prevents back button loop
+      navigate('/profile', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const user = PREDEFINED_USERS.find(u => u.id === selectedUserId);
     if (user) {
       login(user);
-      navigate('/profile'); // Redirect to profile after login
+      navigate('/profile'); 
     }
   };
 
@@ -153,7 +159,7 @@ const UserStatus: React.FC = () => {
         <button 
           onClick={() => {
             logout();
-            navigate('/'); // Go back to landing on logout
+            navigate('/');
           }} 
           style={{ fontSize: '0.75rem', padding: '2px 8px', cursor: 'pointer' }}
         >
@@ -174,7 +180,6 @@ const UserStatus: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  // --- UI STATE ---
   const [isDebugOpen, setDebugOpen] = useState<boolean>(() => {
     const saved = localStorage.getItem('solidlab_debug_sidebar_open');
     return saved !== null ? JSON.parse(saved) : false; 
@@ -183,7 +188,6 @@ const App: React.FC = () => {
     localStorage.setItem('solidlab_debug_sidebar_open', JSON.stringify(isDebugOpen));
   }, [isDebugOpen]);
 
-  // --- QUERY & LOGS STATE ---
   const [currentQuery, setCurrentQuery] = useState<string>("No query executed yet.");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   
@@ -215,7 +219,6 @@ const App: React.FC = () => {
   const [topologyStats, setTopologyStats] = useState<any>(null);
   const [topologyProcessor, setTopologyProcessor] = useState<UpdateProcessor | null>(null);
 
-  // --- METRICS LOGIC ---
   const metricsRef = useRef<QueryMetrics>({
     startTime: 0,
     endTime: 0,
@@ -226,20 +229,16 @@ const App: React.FC = () => {
 
   const [uiMetrics, setUiMetrics] = useState<QueryMetrics>(metricsRef.current);
 
-  // --- GLOBAL QUERY STREAM REGISTRY (Supports Arrays) ---
-  // Stores an array of active stream objects to support parallel sub-queries
   const activeQueryStreamRef = useRef<any[]>([]);
   const activeLoadingSetter = useRef<React.Dispatch<React.SetStateAction<boolean>> | null>(null);
 
   // Pages call this when they create streams. Accepts an array.
   const registerQueryStream = useCallback((streams: any[], setIsLoading: React.Dispatch<React.SetStateAction<boolean>>) => {
-    // 1. Safety check: Cleanup any PREVIOUS streams running before overwriting
     if (activeQueryStreamRef.current.length > 0) {
        activeQueryStreamRef.current.forEach(s => {
           try { s.destroy(); } catch(e) { console.error("Error auto-closing old stream", e); }
        });
     }
-    // 2. Register new
     activeQueryStreamRef.current = streams;
     activeLoadingSetter.current = setIsLoading
   }, []);
@@ -247,7 +246,7 @@ const App: React.FC = () => {
   // The Stop Button Handler
   const stopActiveQuery = useCallback(() => {
     if (activeQueryStreamRef.current.length > 0) {
-        console.log("🛑 Global Stop requested. Destroying streams:", activeQueryStreamRef.current.length);
+        console.log("Global Stop requested. Destroying streams:", activeQueryStreamRef.current.length);
         
         // Destroy all registered streams
         activeQueryStreamRef.current.forEach(stream => {
@@ -267,9 +266,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // --- HANDLERS ---
-
-  // 1. START HANDLER (Sets Running = true)
   const handleQueryStart = useCallback(() => {
     const now = performance.now();
     metricsRef.current = {
@@ -277,12 +273,11 @@ const App: React.FC = () => {
       endTime: 0,
       resultCount: 0,
       arrivalTimes: [],
-      isQueryRunning: true, // Start Timer
+      isQueryRunning: true,
     };
     setUiMetrics({ ...metricsRef.current });
   }, []);
 
-  // 2. RESET HANDLER (Sets Running = false, resets to 0)
   const handleResetMetrics = useCallback(() => {
     // Kill streams if resetting view/navigating
     if (activeQueryStreamRef.current.length > 0) {
@@ -307,7 +302,6 @@ const App: React.FC = () => {
     metrics.resultCount++;
     metrics.arrivalTimes.push(now - metrics.startTime);
 
-    // Immediate UI Update (No Throttling)
     setUiMetrics({ ...metrics }); 
   }, []);
 
@@ -315,13 +309,11 @@ const App: React.FC = () => {
     const metrics = metricsRef.current;
     metrics.isQueryRunning = false;
     metrics.endTime = performance.now();
-    activeQueryStreamRef.current = []; // Clear stream registry
+    activeQueryStreamRef.current = []; 
     
-    // Final UI Update
     setUiMetrics({ ...metrics });
   }, []);
 
-  // --- RESET HANDLER ---
   const handleSetQuery = useCallback((query: string) => {
     setCurrentQuery(query);
     setLogs([]);
@@ -424,7 +416,7 @@ const App: React.FC = () => {
               }} 
               onClick={() => setDebugOpen(!isDebugOpen)}
             >
-              {isDebugOpen ? '✕ Hide Traversal' : '👁️ Show Traversal'}
+              {isDebugOpen ? '✕ Hide Traversal' : 'Show Traversal'}
             </button>
           </div>        
         </nav>
@@ -450,7 +442,7 @@ const App: React.FC = () => {
                 onQueryStart={handleQueryStart}
                 onQueryEnd={handleQueryEnd}
                 onResultArrived={handleResultArrival}
-                registerQuery={registerQueryStream} // <--- Pass down
+                registerQuery={registerQueryStream}
                 />} 
                 />
               <Route path="/forums/:id" element={
@@ -461,7 +453,7 @@ const App: React.FC = () => {
                 onQueryStart={handleQueryStart}
                 onQueryEnd={handleQueryEnd}
                 onResultArrived={handleResultArrival}
-                registerQuery={registerQueryStream} // <--- Pass down
+                registerQuery={registerQueryStream} 
                 />} 
                 />
               <Route path="/profiles/:id" element={
@@ -472,7 +464,7 @@ const App: React.FC = () => {
                 onQueryStart={handleQueryStart}
                 onQueryEnd={handleQueryEnd}
                 onResultArrived={handleResultArrival}
-                registerQuery={registerQueryStream} // <--- Pass down
+                registerQuery={registerQueryStream}
                 />}
                 />
               <Route path="*" element={<div style={{ padding: '2rem' }}><h2>404</h2></div>} />
@@ -499,7 +491,6 @@ const App: React.FC = () => {
                 processor={topologyProcessor}
                 logs={logs}
                 
-                // --- PASS METRICS DATA ---
                 metrics={uiMetrics}
               />
             </div>

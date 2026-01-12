@@ -43,16 +43,12 @@ export const ForumDetail: React.FC<ForumProps> = (
   const location = useLocation();
   const navigate = useNavigate();
 
-  // "id" here is actually the ENCODED URI (e.g. https%3A%2F%2F...)
   const { id } = useParams(); 
 
-  // 1. CALCULATE SUBJECT URI
   const forumUri = useMemo(() => {
-    // Priority 1: Navigation State (Fastest)
     if (location.state?.forumUri){
       return location.state.forumUri
     }
-    // Priority 2: Decode from URL (Handles Refresh)
     if (id) {
       try {
         return decodeURIComponent(id);
@@ -71,10 +67,21 @@ export const ForumDetail: React.FC<ForumProps> = (
   const [messagesMap, setMessagesMap] = useState<Record<string, Message>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- Helper: Safe Navigation to Profiles ---
   const goToProfile = (authorId: string, authorUri: string) => {
     // Clean ID navigation (relies on the Profile component's ID reconstruction)
     navigate(`/profiles/${authorId}`, { state: { personUri: authorUri } });
+  };
+
+  const handleBack = () => {
+    // Check if we have specific instructions on where to return
+    if (location.state?.returnPath && location.state?.returnState) {
+      navigate(location.state.returnPath, {
+        state: location.state.returnState
+      });
+    } else {
+      // Fallback for direct links or refreshes
+      navigate(-1);
+    }
   };
 
   useEffect(() => {
@@ -117,7 +124,6 @@ export const ForumDetail: React.FC<ForumProps> = (
       onQueryStart();
 
       try {
-        // 1. Fetch Moderator info (No Traversal needed usually, just dereference forum)
         const bsMods: BindingsStream = await executeTraversalQuery(queryModerator,
              {traverse: "false", log: logger }, undefined);
              
@@ -129,7 +135,6 @@ export const ForumDetail: React.FC<ForumProps> = (
           }
         });
 
-        // 2. Fetch Messages (Needs Traversal)
         const trackers = createTracker();
         let context = {log: logger};
         if (trackers){
@@ -202,10 +207,9 @@ export const ForumDetail: React.FC<ForumProps> = (
 
   return (
     <div className="container" style={{ maxWidth: '800px', margin: '20px auto', padding: '0 20px' }}>
-      <button className="btn-primary" onClick={() => navigate(-1)} style={{ marginBottom: '20px' }}>
+      <button className="btn-primary" onClick={handleBack} style={{ marginBottom: '20px' }}>
         ← Back
       </button>
-
       {!forumUri ? (
          <div className="card">❌ Error: Invalid Forum Link</div>
       ) : isLoading && sortedMessages.length === 0 ? (
@@ -233,7 +237,6 @@ export const ForumDetail: React.FC<ForumProps> = (
                 className="card message-card" 
                 style={{ marginBottom: '15px', padding: '20px' }}
               >
-                {/* Author Info - Clickable */}
                 <div 
                   className="author-link"
                   style={{ 
@@ -248,14 +251,12 @@ export const ForumDetail: React.FC<ForumProps> = (
                   👤 {msg.authorName}
                 </div>
                 
-                {/* Content */}
                 {msg.content && (
                   <div style={{ marginBottom: '10px' }}>
                     <p style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>{msg.content}</p>
                   </div>
                 )}
 
-                {/* Image Placeholder */}
                 {msg.imageFile && (
                   <div className="image-attachment-preview">
                     <small>🖼️ Image Attachment:</small>

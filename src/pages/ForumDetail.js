@@ -35,6 +35,18 @@ export const ForumDetail = ({ setDebugQuery, logger, createTracker, onQueryStart
         // Clean ID navigation (relies on the Profile component's ID reconstruction)
         navigate(`/profiles/${authorId}`, { state: { personUri: authorUri } });
     };
+    const handleBack = () => {
+        // Check if we have specific instructions on where to return
+        if (location.state?.returnPath && location.state?.returnState) {
+            navigate(location.state.returnPath, {
+                state: location.state.returnState
+            });
+        }
+        else {
+            // Fallback for direct links or refreshes
+            navigate(-1);
+        }
+    };
     useEffect(() => {
         const fetchForumData = async () => {
             // If we still don't have a URI (e.g. bad encoding), stop here
@@ -141,7 +153,7 @@ export const ForumDetail = ({ setDebugQuery, logger, createTracker, onQueryStart
         };
     }, [forumUri, setDebugQuery]);
     const sortedMessages = Object.values(messagesMap).sort((a, b) => b.date.getTime() - a.date.getTime());
-    return (_jsxs("div", { className: "container", style: { maxWidth: '800px', margin: '20px auto', padding: '0 20px' }, children: [_jsx("button", { className: "btn-primary", onClick: () => navigate(-1), style: { marginBottom: '20px' }, children: "\u2190 Back" }), !forumUri ? (_jsx("div", { className: "card", children: "\u274C Error: Invalid Forum Link" })) : isLoading && sortedMessages.length === 0 ? (_jsxs("div", { className: "card loading-pulse", children: [_jsx("div", { className: "spinner" }), "Searching for forum messages..."] })) : (_jsxs(_Fragment, { children: [_jsxs("div", { className: "card forum-header-card", children: [_jsx("h1", { children: title || 'Untitled Forum' }), _jsxs("p", { className: "forum-mod", children: ["\uD83D\uDEE1\uFE0F Moderator: ", _jsx("strong", { children: moderator || 'None' })] }), _jsxs("div", { style: { fontSize: '0.75rem', color: '#999', marginTop: '5px', wordBreak: 'break-all' }, children: ["Source: ", forumUri] })] }), _jsxs("div", { className: "message-list", children: [_jsxs("h3", { children: ["Recent Activity (", sortedMessages.length, ")"] }), sortedMessages.map((msg) => (_jsxs("div", { className: "card message-card", style: { marginBottom: '15px', padding: '20px' }, children: [_jsxs("div", { className: "author-link", style: {
+    return (_jsxs("div", { className: "container", style: { maxWidth: '800px', margin: '20px auto', padding: '0 20px' }, children: [_jsx("button", { className: "btn-primary", onClick: handleBack, style: { marginBottom: '20px' }, children: "\u2190 Back" }), !forumUri ? (_jsx("div", { className: "card", children: "\u274C Error: Invalid Forum Link" })) : isLoading && sortedMessages.length === 0 ? (_jsxs("div", { className: "card loading-pulse", children: [_jsx("div", { className: "spinner" }), "Searching for forum messages..."] })) : (_jsxs(_Fragment, { children: [_jsxs("div", { className: "card forum-header-card", children: [_jsx("h1", { children: title || 'Untitled Forum' }), _jsxs("p", { className: "forum-mod", children: ["\uD83D\uDEE1\uFE0F Moderator: ", _jsx("strong", { children: moderator || 'None' })] }), _jsxs("div", { style: { fontSize: '0.75rem', color: '#999', marginTop: '5px', wordBreak: 'break-all' }, children: ["Source: ", forumUri] })] }), _jsxs("div", { className: "message-list", children: [_jsxs("h3", { children: ["Recent Activity (", sortedMessages.length, ")"] }), sortedMessages.map((msg) => (_jsxs("div", { className: "card message-card", style: { marginBottom: '15px', padding: '20px' }, children: [_jsxs("div", { className: "author-link", style: {
                                             fontWeight: 'bold',
                                             color: '#2563eb',
                                             marginBottom: '8px',

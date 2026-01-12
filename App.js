@@ -33,17 +33,25 @@ const PREDEFINED_USERS = [
         username: 'https://solidbench.linkeddatafragments.org/pods/00000002199023255637/profile/card#me'
     }
 ];
-// --- 2. LANDING PAGE COMPONENT ---
+// --- 2. LANDING PAGE COMPONENT (UPDATED) ---
 const LandingPage = () => {
-    const { login } = useAuth();
+    // 1. Get 'user' from context to check status
+    const { login, user } = useAuth();
     const navigate = useNavigate();
     const [selectedUserId, setSelectedUserId] = useState(PREDEFINED_USERS[0].id);
+    // 2. Auto-redirect if already logged in
+    useEffect(() => {
+        if (user) {
+            // replace: true prevents back button loop
+            navigate('/profile', { replace: true });
+        }
+    }, [user, navigate]);
     const handleLogin = (e) => {
         e.preventDefault();
         const user = PREDEFINED_USERS.find(u => u.id === selectedUserId);
         if (user) {
             login(user);
-            navigate('/profile'); // Redirect to profile after login
+            navigate('/profile');
         }
     };
     return (_jsx("div", { style: {

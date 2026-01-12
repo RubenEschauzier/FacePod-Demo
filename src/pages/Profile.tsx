@@ -7,15 +7,12 @@ import '../index.css';
 import type { StatisticLinkDiscovery } from '@comunica/statistic-link-discovery';
 import type { StatisticLinkDereference } from '@comunica/statistic-link-dereference';
 
-// --- HELPER: SolidBench ID Reconstruction ---
-// This allows us to use clean URLs like /profiles/933
 const reconstructUriFromId = (shortId: string): string => {
   // SolidBench IDs are zero-padded to 20 digits
   const paddedId = shortId.padStart(20, '0');
   return `https://solidbench.linkeddatafragments.org/pods/${paddedId}/profile/card#me`;
 };
 
-// --- Data Interfaces ---
 interface UserProfile {
   name: string;
   lastName: string;
@@ -56,7 +53,6 @@ interface ProfileProps {
   registerQuery: (stream: any[], setIsLoading: any) => void;
 }
 
-// --- SPARQL Queries ---
 const QUERY_MY_FRIENDS = `
   PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
   PREFIX foaf: <http://xmlns.com/foaf/0.1/>
@@ -151,19 +147,16 @@ export const Profile: React.FC<ProfileProps> = ({
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { id } = useParams(); // Gets "933" from URL
+  const { id } = useParams();
 
-  // 1. CALCULATE SUBJECT URI
+  // Here we calculate the uri based on state or the id in the URL
   const subjectUri = useMemo(() => {
-    // Priority 1: Navigation State (Fastest - passed from previous click)
     if (location.state?.personUri){
       return location.state.personUri
     }
-    // Priority 2: Reconstruct from ID (Handles Refresh / Deep Link)
     if (id) {
       return reconstructUriFromId(id);
     }
-    // Priority 3: Logged in User (Default /profile route)
     return user?.username;
   }, [id, location.state, user]);
 
@@ -187,7 +180,6 @@ export const Profile: React.FC<ProfileProps> = ({
     setDebugQuery(""); 
   };
 
-  // Simplified Navigation: Just stop queries and go
   const handleNavigation = (path: string, state: any) => {
     stopQuery();
     navigate(path, { state });
@@ -207,16 +199,27 @@ export const Profile: React.FC<ProfileProps> = ({
     return () => stopQuery();
   }, []);
 
+  useEffect(() => {
+    // Check if we arrived here with state telling us which tab to open
+    const savedTab = location.state?.activeTab;
+
+    if (savedTab === 'forums') {
+      loadForums();
+    } else if (savedTab === 'friends') {
+      loadFriends();
+    } else {
+      loadProfileInfo();
+    }
+  }, [subjectUri, location.state]);
+
   if (!isAuthenticated || !user) {
     return <div className="card"><h2>Access Denied</h2></div>;
   }
 
-  // If we are deep linking without state (edge case), we might not have a URI
   if (!subjectUri) {
     return <div className="card"><h2>Error: Unknown Profile URI</h2><p>Please navigate from the friends list.</p></div>;
   }
 
-  // --- Data Loaders (Unchanged logic, just using subjectUri) ---
 
   const loadProfileInfo = async () => {
     stopQuery();
@@ -375,7 +378,6 @@ export const Profile: React.FC<ProfileProps> = ({
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 20px' }}>
       
       <div className="dashboard-header">
-        {/* Changed header to reflect if looking at self or others */}
         {isOwnProfile ? (
           <h1 className="dashboard-title">Welcome back, {user.name}</h1>
         ) : (
@@ -390,7 +392,6 @@ export const Profile: React.FC<ProfileProps> = ({
       </div>
 
       <div className="action-bar">
-        {/* Buttons now load data for the subjectUri */}
         <button className="btn-primary" onClick={loadProfileInfo} disabled={isLoading}>
           {isLoading && activeSection === 'info' ? 'Loading...' : '📄 Profile Info'}
         </button>
@@ -412,10 +413,8 @@ export const Profile: React.FC<ProfileProps> = ({
           </div>
         )}
 
-        {/* Info Section */}
         {!isLoading && activeSection === 'info' && profileData && (
           <div className="profile-container">
-            {/* Same Profile UI as before */}
             <div className="card profile-column-left">
               <div className="profile-header">
                 <div className="avatar-circle">👤</div>
@@ -434,7 +433,7 @@ export const Profile: React.FC<ProfileProps> = ({
             </div>
 
             <div className="card profile-column-right">
-              <h3>❤️ Interests</h3>
+              <h3>Interests</h3>
               <div className="scroll-area">
                 {profileData.interests.map((interest, i) => (
                   <span key={i} className="interest-chip">{interest}</span>
@@ -456,15 +455,22 @@ export const Profile: React.FC<ProfileProps> = ({
                   <p className="friend-city">
                     {forum.memberCount === -1 ? "⏳ Counting..." : `👥 ${forum.memberCount} Members`}
                   </p>
-                  
-                  {/* FIX 1: Navigate to /forums/FORUM_ID */}
+                                    
                   <button className="btn-outline-sm"
                     onClick={() => handleNavigation(
                       `/forums/${encodeURIComponent(forum.uri)}`, 
-                      { forumUri: forum.uri }
-                    )}                  >
+                      { 
+                        forumUri: forum.uri,
+                        returnPath: location.pathname,
+                        returnState: { 
+                          personUri: subjectUri, 
+                          activeTab: 'forums'    
+                        }
+                      }
+                    )}
+                  >
                     View Forum
-                  </button>    
+                  </button>                
                 </div>
               ))}
             </div>
