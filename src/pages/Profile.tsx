@@ -213,7 +213,19 @@ export const Profile: React.FC<ProfileProps> = ({
   }, [subjectUri, location.state]);
 
   if (!isAuthenticated || !user) {
-    return <div className="card"><h2>Access Denied</h2></div>;
+    return (
+      <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+        <h2 style={{ color: '#ef4444' }}>Access Denied</h2>
+        <p>You have been logged out or do not have permission to view this page.</p>
+        <button 
+          className="btn-primary" 
+          onClick={() => window.location.href = '#/'}
+          style={{ marginTop: '20px' }}
+        >
+          Return to Login
+        </button>
+      </div>
+    );
   }
 
   if (!subjectUri) {

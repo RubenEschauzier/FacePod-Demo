@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { StatisticTraversalTopology } from '@rubeneschauzier/statistic-traversal-topology';
 import { ForumDetail } from './src/pages/ForumDetail.js';
 import QueryDebugger from './src/components/QueryDebugger.js';
@@ -33,13 +33,21 @@ const PREDEFINED_USERS = [
         username: 'https://solidbench.linkeddatafragments.org/pods/00000002199023255637/profile/card#me'
     }
 ];
-// --- 2. LANDING PAGE COMPONENT (UPDATED) ---
+// --- 2. PROTECTED ROUTE WRAPPER ---
+// This prevents "blank screens" by ensuring a user exists before rendering the page.
+const ProtectedRoute = ({ children }) => {
+    const { user } = useAuth();
+    if (!user) {
+        // If no user, immediately redirect to login (LandingPage)
+        return _jsx(Navigate, { to: "/", replace: true });
+    }
+    return children;
+};
 const LandingPage = () => {
     // 1. Get 'user' from context to check status
     const { login, user } = useAuth();
     const navigate = useNavigate();
     const [selectedUserId, setSelectedUserId] = useState(PREDEFINED_USERS[0].id);
-    // 2. Auto-redirect if already logged in
     useEffect(() => {
         if (user) {
             // replace: true prevents back button loop
@@ -69,7 +77,7 @@ const LandingPage = () => {
                 width: '100%',
                 maxWidth: '400px',
                 textAlign: 'center'
-            }, children: [_jsx("h1", { style: { marginBottom: '1.5rem', fontSize: '1.5rem', color: '#1e293b' }, children: "\uD83E\uDDEA SolidLab Login" }), _jsxs("form", { onSubmit: handleLogin, style: { display: 'flex', flexDirection: 'column', gap: '1rem' }, children: [_jsxs("div", { style: { textAlign: 'left' }, children: [_jsx("label", { style: { display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 'bold' }, children: "Select a Test Identity" }), _jsx("select", { value: selectedUserId, onChange: (e) => setSelectedUserId(e.target.value), style: {
+            }, children: [_jsx("h1", { style: { marginBottom: '1.5rem', fontSize: '1.5rem', color: '#1e293b' }, children: "FacePod Login" }), _jsxs("form", { onSubmit: handleLogin, style: { display: 'flex', flexDirection: 'column', gap: '1rem' }, children: [_jsxs("div", { style: { textAlign: 'left' }, children: [_jsx("label", { style: { display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 'bold' }, children: "Select a Test Identity" }), _jsx("select", { value: selectedUserId, onChange: (e) => setSelectedUserId(e.target.value), style: {
                                         width: '100%',
                                         padding: '0.75rem',
                                         borderRadius: '6px',
@@ -89,18 +97,14 @@ const LandingPage = () => {
 };
 const UserStatus = () => {
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
+    // We don't need navigate here anymore; ProtectedRoute handles the redirect when state changes.
     if (user) {
-        return (_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: '10px' }, children: [_jsxs("span", { style: { fontSize: '0.9rem' }, children: ["Welcome, ", _jsx("strong", { children: user.name })] }), _jsx("button", { onClick: () => {
-                        logout();
-                        navigate('/'); // Go back to landing on logout
-                    }, style: { fontSize: '0.75rem', padding: '2px 8px', cursor: 'pointer' }, children: "Logout" })] }));
+        return (_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: '10px' }, children: [_jsxs("span", { style: { fontSize: '0.9rem' }, children: ["Welcome, ", _jsx("strong", { children: user.name })] }), _jsx("button", { onClick: () => logout(), style: { fontSize: '0.75rem', padding: '2px 8px', cursor: 'pointer' }, children: "Logout" })] }));
     }
     // If not logged in, we show a button to go to login page (if we are deeper in the app)
     return (_jsx(Link, { to: "/", style: { textDecoration: 'none' }, children: _jsx("button", { style: { background: '#2563eb', color: 'white', border: 'none', padding: '5px 15px', borderRadius: '4px', cursor: 'pointer' }, children: "Go to Login" }) }));
 };
 const App = () => {
-    // --- UI STATE ---
     const [isDebugOpen, setDebugOpen] = useState(() => {
         const saved = localStorage.getItem('solidlab_debug_sidebar_open');
         return saved !== null ? JSON.parse(saved) : false;
@@ -108,7 +112,6 @@ const App = () => {
     useEffect(() => {
         localStorage.setItem('solidlab_debug_sidebar_open', JSON.stringify(isDebugOpen));
     }, [isDebugOpen]);
-    // --- QUERY & LOGS STATE ---
     const [currentQuery, setCurrentQuery] = useState("No query executed yet.");
     const [logs, setLogs] = useState([]);
     const [isTrackingEnabled, setIsTrackingEnabled] = useState(() => {
@@ -133,7 +136,6 @@ const App = () => {
     // Topology related states
     const [topologyStats, setTopologyStats] = useState(null);
     const [topologyProcessor, setTopologyProcessor] = useState(null);
-    // --- METRICS LOGIC ---
     const metricsRef = useRef({
         startTime: 0,
         endTime: 0,
@@ -142,13 +144,10 @@ const App = () => {
         isQueryRunning: false,
     });
     const [uiMetrics, setUiMetrics] = useState(metricsRef.current);
-    // --- GLOBAL QUERY STREAM REGISTRY (Supports Arrays) ---
-    // Stores an array of active stream objects to support parallel sub-queries
     const activeQueryStreamRef = useRef([]);
     const activeLoadingSetter = useRef(null);
     // Pages call this when they create streams. Accepts an array.
     const registerQueryStream = useCallback((streams, setIsLoading) => {
-        // 1. Safety check: Cleanup any PREVIOUS streams running before overwriting
         if (activeQueryStreamRef.current.length > 0) {
             activeQueryStreamRef.current.forEach(s => {
                 try {
@@ -159,14 +158,13 @@ const App = () => {
                 }
             });
         }
-        // 2. Register new
         activeQueryStreamRef.current = streams;
         activeLoadingSetter.current = setIsLoading;
     }, []);
     // The Stop Button Handler
     const stopActiveQuery = useCallback(() => {
         if (activeQueryStreamRef.current.length > 0) {
-            console.log("🛑 Global Stop requested. Destroying streams:", activeQueryStreamRef.current.length);
+            console.log("Global Stop requested. Destroying streams:", activeQueryStreamRef.current.length);
             // Destroy all registered streams
             activeQueryStreamRef.current.forEach(stream => {
                 try {
@@ -187,8 +185,6 @@ const App = () => {
             setUiMetrics({ ...metricsRef.current });
         }
     }, []);
-    // --- HANDLERS ---
-    // 1. START HANDLER (Sets Running = true)
     const handleQueryStart = useCallback(() => {
         const now = performance.now();
         metricsRef.current = {
@@ -196,11 +192,10 @@ const App = () => {
             endTime: 0,
             resultCount: 0,
             arrivalTimes: [],
-            isQueryRunning: true, // Start Timer
+            isQueryRunning: true,
         };
         setUiMetrics({ ...metricsRef.current });
     }, []);
-    // 2. RESET HANDLER (Sets Running = false, resets to 0)
     const handleResetMetrics = useCallback(() => {
         // Kill streams if resetting view/navigating
         if (activeQueryStreamRef.current.length > 0) {
@@ -224,18 +219,15 @@ const App = () => {
         const metrics = metricsRef.current;
         metrics.resultCount++;
         metrics.arrivalTimes.push(now - metrics.startTime);
-        // Immediate UI Update (No Throttling)
         setUiMetrics({ ...metrics });
     }, []);
     const handleQueryEnd = useCallback(() => {
         const metrics = metricsRef.current;
         metrics.isQueryRunning = false;
         metrics.endTime = performance.now();
-        activeQueryStreamRef.current = []; // Clear stream registry
-        // Final UI Update
+        activeQueryStreamRef.current = [];
         setUiMetrics({ ...metrics });
     }, []);
-    // --- RESET HANDLER ---
     const handleSetQuery = useCallback((query) => {
         setCurrentQuery(query);
         setLogs([]);
@@ -271,7 +263,7 @@ const App = () => {
                         position: 'sticky',
                         top: 0,
                         zIndex: 100
-                    }, children: [_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: '20px' }, children: [_jsx(Link, { to: "/", style: { fontWeight: 'bold', color: '#2563eb', textDecoration: 'none', fontSize: '1.2rem' }, children: "\uD83E\uDDEA SolidLab" }), _jsx(Link, { to: "/profile", style: { textDecoration: 'none', color: '#444', fontSize: '0.9rem' }, children: "My Profile" })] }), _jsxs("div", { style: { display: 'flex', gap: '20px', alignItems: 'center' }, children: [uiMetrics.isQueryRunning && (_jsxs("button", { onClick: stopActiveQuery, style: {
+                    }, children: [_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: '20px' }, children: [_jsx(Link, { to: "/", style: { fontWeight: 'bold', color: '#2563eb', textDecoration: 'none', fontSize: '1.2rem' }, children: "FacePod" }), _jsx(Link, { to: "/profile", style: { textDecoration: 'none', color: '#444', fontSize: '0.9rem' }, children: "My Profile" })] }), _jsxs("div", { style: { display: 'flex', gap: '20px', alignItems: 'center' }, children: [uiMetrics.isQueryRunning && (_jsxs("button", { onClick: stopActiveQuery, style: {
                                         background: '#ef4444',
                                         color: 'white',
                                         border: 'none',
@@ -294,14 +286,14 @@ const App = () => {
                                         alignItems: 'center',
                                         gap: '8px',
                                         transition: 'background 0.2s'
-                                    }, onClick: () => setDebugOpen(!isDebugOpen), children: isDebugOpen ? '✕ Hide Traversal' : '👁️ Show Traversal' })] })] }), _jsxs("div", { style: { display: 'flex', height: 'calc(100vh - 65px)', overflow: 'hidden' }, children: [_jsx("main", { style: {
+                                    }, onClick: () => setDebugOpen(!isDebugOpen), children: isDebugOpen ? '✕ Hide Traversal' : 'Show Traversal' })] })] }), _jsxs("div", { style: { display: 'flex', height: 'calc(100vh - 65px)', overflow: 'hidden' }, children: [_jsx("main", { style: {
                                 flex: isDebugOpen ? 4 : 1,
                                 background: '#f8fafc',
                                 overflowY: 'auto',
                                 transition: 'flex 0.4s ease-in-out',
                                 borderRight: isDebugOpen ? '1px solid #e2e8f0' : 'none',
                                 minWidth: isDebugOpen ? '300px' : '100%'
-                            }, children: _jsxs(Routes, { children: [_jsx(Route, { path: "/", element: _jsx(LandingPage, {}) }), _jsx(Route, { path: "/profile", element: _jsx(Profile, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }), _jsx(Route, { path: "/forums/:id", element: _jsx(ForumDetail, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }), _jsx(Route, { path: "/profiles/:id", element: _jsx(Profile, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }), _jsx(Route, { path: "*", element: _jsx("div", { style: { padding: '2rem' }, children: _jsx("h2", { children: "404" }) }) })] }) }), _jsx("aside", { style: {
+                            }, children: _jsxs(Routes, { children: [_jsx(Route, { path: "/", element: _jsx(LandingPage, {}) }), _jsx(Route, { path: "/profile", element: _jsx(ProtectedRoute, { children: _jsx(Profile, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }) }), _jsx(Route, { path: "/forums/:id", element: _jsx(ProtectedRoute, { children: _jsx(ForumDetail, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }) }), _jsx(Route, { path: "/profiles/:id", element: _jsx(ProtectedRoute, { children: _jsx(Profile, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }) }), _jsx(Route, { path: "*", element: _jsx("div", { style: { padding: '2rem' }, children: _jsx("h2", { children: "404" }) }) })] }) }), _jsx("aside", { style: {
                                 flex: isDebugOpen ? 6 : 0,
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -309,9 +301,7 @@ const App = () => {
                                 transition: 'flex 0.4s ease-in-out',
                                 overflow: 'hidden',
                                 visibility: isDebugOpen ? 'visible' : 'hidden'
-                            }, children: _jsx("div", { style: { minWidth: '50vw', height: '100%' }, children: _jsx(QueryDebugger, { isOpen: isDebugOpen, onClose: () => setDebugOpen(false), currentQuery: currentQuery, isTrackingEnabled: isTrackingEnabled, topology: topologyStats, processor: topologyProcessor, logs: logs, 
-                                    // --- PASS METRICS DATA ---
-                                    metrics: uiMetrics }) }) })] })] }) }));
+                            }, children: _jsx("div", { style: { minWidth: '50vw', height: '100%' }, children: _jsx(QueryDebugger, { isOpen: isDebugOpen, onClose: () => setDebugOpen(false), currentQuery: currentQuery, isTrackingEnabled: isTrackingEnabled, topology: topologyStats, processor: topologyProcessor, logs: logs, metrics: uiMetrics }) }) })] })] }) }));
 };
 export default App;
 //# sourceMappingURL=App.js.map

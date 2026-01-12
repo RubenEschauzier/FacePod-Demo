@@ -5,15 +5,11 @@ import { executeTraversalQuery, ReactTraversalLogger } from '../api/queryEngineS
 export const ForumDetail = ({ setDebugQuery, logger, createTracker, onQueryStart, onQueryEnd, onResultArrived, registerQuery, }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    // "id" here is actually the ENCODED URI (e.g. https%3A%2F%2F...)
     const { id } = useParams();
-    // 1. CALCULATE SUBJECT URI
     const forumUri = useMemo(() => {
-        // Priority 1: Navigation State (Fastest)
         if (location.state?.forumUri) {
             return location.state.forumUri;
         }
-        // Priority 2: Decode from URL (Handles Refresh)
         if (id) {
             try {
                 return decodeURIComponent(id);
@@ -30,7 +26,6 @@ export const ForumDetail = ({ setDebugQuery, logger, createTracker, onQueryStart
     const [moderator, setModerator] = useState('');
     const [messagesMap, setMessagesMap] = useState({});
     const [isLoading, setIsLoading] = useState(true);
-    // --- Helper: Safe Navigation to Profiles ---
     const goToProfile = (authorId, authorUri) => {
         // Clean ID navigation (relies on the Profile component's ID reconstruction)
         navigate(`/profiles/${authorId}`, { state: { personUri: authorUri } });
@@ -83,7 +78,6 @@ export const ForumDetail = ({ setDebugQuery, logger, createTracker, onQueryStart
             setDebugQuery(queryModerator + "\n\n\n" + queryMessages);
             onQueryStart();
             try {
-                // 1. Fetch Moderator info (No Traversal needed usually, just dereference forum)
                 const bsMods = await executeTraversalQuery(queryModerator, { traverse: "false", log: logger }, undefined);
                 bsMods.on('data', (binding) => {
                     onResultArrived();
@@ -93,7 +87,6 @@ export const ForumDetail = ({ setDebugQuery, logger, createTracker, onQueryStart
                         setModerator(`${binding.get('fName').value} ${binding.get('lName').value}`);
                     }
                 });
-                // 2. Fetch Messages (Needs Traversal)
                 const trackers = createTracker();
                 let context = { log: logger };
                 if (trackers) {

@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useCallback, useMemo, useEffect, useRef, type JSX } from 'react';
+import { HashRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { StatisticTraversalTopology } from '@rubeneschauzier/statistic-traversal-topology';
 
 import { ForumDetail } from './src/pages/ForumDetail.js';
@@ -57,6 +57,19 @@ const PREDEFINED_USERS: SolidUser[] = [
   }
 ];
 
+// --- 2. PROTECTED ROUTE WRAPPER ---
+// This prevents "blank screens" by ensuring a user exists before rendering the page.
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    // If no user, immediately redirect to login (LandingPage)
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
 const LandingPage: React.FC = () => {
   // 1. Get 'user' from context to check status
   const { login, user } = useAuth();
@@ -97,7 +110,7 @@ const LandingPage: React.FC = () => {
         maxWidth: '400px',
         textAlign: 'center'
       }}>
-        <h1 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', color: '#1e293b' }}>🧪 SolidLab Login</h1>
+        <h1 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', color: '#1e293b' }}>FacePod Login</h1>
         
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ textAlign: 'left' }}>
@@ -150,17 +163,14 @@ const LandingPage: React.FC = () => {
 
 const UserStatus: React.FC = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  // We don't need navigate here anymore; ProtectedRoute handles the redirect when state changes.
 
   if (user) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <span style={{ fontSize: '0.9rem' }}>Welcome, <strong>{user.name}</strong></span>
         <button 
-          onClick={() => {
-            logout();
-            navigate('/');
-          }} 
+          onClick={() => logout()} 
           style={{ fontSize: '0.75rem', padding: '2px 8px', cursor: 'pointer' }}
         >
           Logout
@@ -361,7 +371,7 @@ const App: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <Link to="/" style={{ fontWeight: 'bold', color: '#2563eb', textDecoration: 'none', fontSize: '1.2rem' }}>
-              🧪 SolidLab
+              FacePod
             </Link>
             <Link to="/profile" style={{ textDecoration: 'none', color: '#444', fontSize: '0.9rem' }}>My Profile</Link>
           </div>
@@ -434,39 +444,49 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               
+              {/* WRAPPED PROTECTED ROUTES */}
               <Route path="/profile" element={
-                <Profile
-                setDebugQuery={handleSetQuery}
-                logger={ isTrackingEnabled ? traversalLogger : undefined } 
-                createTracker={createTopologyTracker}
-                onQueryStart={handleQueryStart}
-                onQueryEnd={handleQueryEnd}
-                onResultArrived={handleResultArrival}
-                registerQuery={registerQueryStream}
-                />} 
-                />
+                <ProtectedRoute>
+                  <Profile
+                    setDebugQuery={handleSetQuery}
+                    logger={ isTrackingEnabled ? traversalLogger : undefined } 
+                    createTracker={createTopologyTracker}
+                    onQueryStart={handleQueryStart}
+                    onQueryEnd={handleQueryEnd}
+                    onResultArrived={handleResultArrival}
+                    registerQuery={registerQueryStream}
+                  />
+                </ProtectedRoute>
+              } />
+              
               <Route path="/forums/:id" element={
-                <ForumDetail 
-                setDebugQuery={handleSetQuery} 
-                logger={isTrackingEnabled ? traversalLogger : undefined}
-                createTracker={createTopologyTracker}
-                onQueryStart={handleQueryStart}
-                onQueryEnd={handleQueryEnd}
-                onResultArrived={handleResultArrival}
-                registerQuery={registerQueryStream} 
-                />} 
-                />
+                <ProtectedRoute>
+                  <ForumDetail 
+                    setDebugQuery={handleSetQuery} 
+                    logger={isTrackingEnabled ? traversalLogger : undefined}
+                    createTracker={createTopologyTracker}
+                    onQueryStart={handleQueryStart}
+                    onQueryEnd={handleQueryEnd}
+                    onResultArrived={handleResultArrival}
+                    registerQuery={registerQueryStream} 
+                  />
+                </ProtectedRoute>
+              } />
+              
               <Route path="/profiles/:id" element={
-                <Profile 
-                setDebugQuery={handleSetQuery} 
-                logger={isTrackingEnabled ? traversalLogger : undefined}
-                createTracker={createTopologyTracker}
-                onQueryStart={handleQueryStart}
-                onQueryEnd={handleQueryEnd}
-                onResultArrived={handleResultArrival}
-                registerQuery={registerQueryStream}
-                />}
-                />
+                <ProtectedRoute>
+                  <Profile 
+                    setDebugQuery={handleSetQuery} 
+                    logger={isTrackingEnabled ? traversalLogger : undefined}
+                    createTracker={createTopologyTracker}
+                    onQueryStart={handleQueryStart}
+                    onQueryEnd={handleQueryEnd}
+                    onResultArrived={handleResultArrival}
+                    registerQuery={registerQueryStream}
+                  />
+                </ProtectedRoute>
+              } />
+              
               <Route path="*" element={<div style={{ padding: '2rem' }}><h2>404</h2></div>} />
             </Routes>
           </main>
