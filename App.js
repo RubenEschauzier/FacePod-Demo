@@ -10,6 +10,7 @@ import { StatisticLinkDiscovery } from '@comunica/statistic-link-discovery';
 import { StatisticLinkDereference } from '@comunica/statistic-link-dereference';
 import { UpdateProcessor } from './src/api/UpdateProcessor.js';
 import { Profile } from './src/pages/Profile.js';
+import { About } from './src/pages/About.js';
 // --- 1. PREDEFINED USERS FOR DROPDOWN ---
 const PREDEFINED_USERS = [
     {
@@ -210,7 +211,7 @@ const App = () => {
             endTime: 0,
             resultCount: 0,
             arrivalTimes: [],
-            isQueryRunning: false, // Idle
+            isQueryRunning: false,
         };
         setUiMetrics({ ...metricsRef.current });
     }, []);
@@ -263,7 +264,7 @@ const App = () => {
                         position: 'sticky',
                         top: 0,
                         zIndex: 100
-                    }, children: [_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: '20px' }, children: [_jsx(Link, { to: "/", style: { fontWeight: 'bold', color: '#2563eb', textDecoration: 'none', fontSize: '1.2rem' }, children: "FacePod" }), _jsx(Link, { to: "/profile", style: { textDecoration: 'none', color: '#444', fontSize: '0.9rem' }, children: "My Profile" })] }), _jsxs("div", { style: { display: 'flex', gap: '20px', alignItems: 'center' }, children: [uiMetrics.isQueryRunning && (_jsxs("button", { onClick: stopActiveQuery, style: {
+                    }, children: [_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: '20px' }, children: [_jsx(Link, { to: "/", style: { fontWeight: 'bold', color: '#2563eb', textDecoration: 'none', fontSize: '1.2rem' }, children: "FacePod" }), _jsx(Link, { to: "/profile", style: { textDecoration: 'none', color: '#444', fontSize: '0.9rem' }, children: "My Profile" }), _jsx(Link, { to: "/about", style: { textDecoration: 'none', color: '#444', fontSize: '0.9rem' }, children: "About" })] }), _jsxs("div", { style: { display: 'flex', gap: '20px', alignItems: 'center' }, children: [uiMetrics.isQueryRunning && (_jsxs("button", { onClick: stopActiveQuery, style: {
                                         background: '#ef4444',
                                         color: 'white',
                                         border: 'none',
@@ -293,7 +294,7 @@ const App = () => {
                                 transition: 'flex 0.4s ease-in-out',
                                 borderRight: isDebugOpen ? '1px solid #e2e8f0' : 'none',
                                 minWidth: isDebugOpen ? '300px' : '100%'
-                            }, children: _jsxs(Routes, { children: [_jsx(Route, { path: "/", element: _jsx(LandingPage, {}) }), _jsx(Route, { path: "/profile", element: _jsx(ProtectedRoute, { children: _jsx(Profile, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }) }), _jsx(Route, { path: "/forums/:id", element: _jsx(ProtectedRoute, { children: _jsx(ForumDetail, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }) }), _jsx(Route, { path: "/profiles/:id", element: _jsx(ProtectedRoute, { children: _jsx(Profile, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }) }), _jsx(Route, { path: "*", element: _jsx("div", { style: { padding: '2rem' }, children: _jsx("h2", { children: "404" }) }) })] }) }), _jsx("aside", { style: {
+                            }, children: _jsxs(Routes, { children: [_jsx(Route, { path: "/", element: _jsx(LandingPage, {}) }), _jsx(Route, { path: "/about", element: _jsx(About, {}) }), _jsx(Route, { path: "/profile", element: _jsx(ProtectedRoute, { children: _jsx(Profile, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }) }), _jsx(Route, { path: "/forums/:id", element: _jsx(ProtectedRoute, { children: _jsx(ForumDetail, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }) }), _jsx(Route, { path: "/profiles/:id", element: _jsx(ProtectedRoute, { children: _jsx(Profile, { setDebugQuery: handleSetQuery, logger: isTrackingEnabled ? traversalLogger : undefined, createTracker: createTopologyTracker, onQueryStart: handleQueryStart, onQueryEnd: handleQueryEnd, onResultArrived: handleResultArrival, registerQuery: registerQueryStream }) }) }), _jsx(Route, { path: "*", element: _jsx("div", { style: { padding: '2rem' }, children: _jsx("h2", { children: "404" }) }) })] }) }), _jsx("aside", { style: {
                                 flex: isDebugOpen ? 6 : 0,
                                 display: 'flex',
                                 flexDirection: 'column',

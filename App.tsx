@@ -10,6 +10,7 @@ import { StatisticLinkDiscovery } from '@comunica/statistic-link-discovery';
 import { StatisticLinkDereference } from '@comunica/statistic-link-dereference';
 import { UpdateProcessor } from './src/api/UpdateProcessor.js';
 import { Profile } from './src/pages/Profile.js';
+import { About } from './src/pages/About.js';
 
 interface SolidUser {
   id: string;
@@ -300,7 +301,7 @@ const App: React.FC = () => {
       endTime: 0,
       resultCount: 0,
       arrivalTimes: [],
-      isQueryRunning: false, // Idle
+      isQueryRunning: false,
     };
     setUiMetrics({ ...metricsRef.current });
   }, []);
@@ -374,6 +375,7 @@ const App: React.FC = () => {
               FacePod
             </Link>
             <Link to="/profile" style={{ textDecoration: 'none', color: '#444', fontSize: '0.9rem' }}>My Profile</Link>
+            <Link to="/about" style={{ textDecoration: 'none', color: '#444', fontSize: '0.9rem' }}>About</Link>
           </div>
 
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
@@ -443,8 +445,8 @@ const App: React.FC = () => {
           }}>
             <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/about" element={<About />} />
               
-              {/* WRAPPED PROTECTED ROUTES */}
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Profile
