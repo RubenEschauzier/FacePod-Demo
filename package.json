@@ -6,7 +6,7 @@
   "author": "Ruben Eschauzier",
   "type": "module",
   "main": "index.js",
-  "homepage": "https://RubenEschauzier.github.io/Link-Traversal-Demo-SolidLab",
+  "homepage": "https://RubenEschauzier.github.io/FacePod-Demo",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
