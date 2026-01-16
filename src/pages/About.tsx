@@ -10,6 +10,14 @@ export const About: React.FC = () => {
         <p style={{ fontSize: '1.1rem', lineHeight: '1.7', marginBottom: '1.5rem' }}>
           FacePod is a decentralized social network explorer designed to demonstrate the power of 
           <strong> Solid</strong> and <strong>Link Traversal Query Processing (LTQP)</strong>.
+          The source code is available on {' '}
+            <a
+            href="https://github.com/RubenEschauzier/FacePod-Demo"
+            target="_blank"
+            rel="noopener noreferrer"
+            >
+            GitHub
+            </a>{' '}
         </p>
 
         <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '2rem 0' }} />
